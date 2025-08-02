@@ -13,6 +13,15 @@ from from_libs.vector_operations import magnitude_vector as np_magnitude_vector,
 from from_libs.matrix_operations import shape_matrix as np_shape_matrix, get_row_matrix as np_get_row_matrix, get_column_matrix as np_get_column_matrix
 from from_libs.matrix_operations import create_matrix as np_create_matrix, create_identity_matrix as np_create_identity_matrix
 
+from example_applications.principal_component_analysis import VanillaPCA
+
+import matplotlib.pyplot as plt
+import matplotlib.cm as colomap
+from matplotlib.figure import Figure
+
+import random
+from typing import Optional
+
 def elements_generation_function(n_row: int, n_column: int) -> float:
     return n_row + n_column
 
@@ -161,22 +170,75 @@ def tests_matrix_operations_from_libs(matrixA: NPMatrix) -> None:
     assert np.all(identity_matrix == identity_matrix_truth), "The create identity matrix function is wrong!"
     print(f"The {n_rows} x {n_rows} identity matrix is: {identity_matrix}")
 
+def step_by_step_pca(pca_data: NPMatrix, pca: VanillaPCA) -> None:
+    standardized_data = pca._standardize_data(data=pca_data)
+    print(f"Standardized data:\n{standardized_data}")
+
+    cov_matrix = pca._compute_covariance_matrix(standardized_data=standardized_data)
+    print(f"Covariance matrix:\n{cov_matrix}")
+
+    eigen_decomp_dict = pca._compute_eigen_decomposition(covariance_matrix=cov_matrix)
+    print(f"Eigen Values and Vectors:\n{eigen_decomp_dict}")
+
+    feature_vector = pca._select_features(eigen_decomposition=eigen_decomp_dict, n_feat_to_keep=len(eigen_decomp_dict))
+    print(f"Feature Vector:\n{feature_vector}")
+
+    projected_data = pca._project_original_data(original_data=standardized_data, feature_vector=feature_vector)
+    print(f"Projected data:\n{projected_data}")
+
+def plot_vectors(vectors: Matrix, fig: Optional[Figure] = None) -> Figure:
+    if not fig:
+        fig = plt.figure(figsize=(8,6))
+
+    ax = fig.add_subplot(111, projection='3d')
+    max_dim = 0
+    min_dim = 0
+    colors = ["r", "g", "k", "k", "k", "b", "orange"]
+
+    for i, vec in enumerate(vectors):
+        x,y,z = vec
+        max_dim = max(x, y, z, max_dim)
+        min_dim = min(x, y, z, min_dim)
+
+        color = colors[i]
+
+        ax.quiver(0,0,0, x,y,z, color=color, arrow_length_ratio=0.1)
+        ax.plot3D(x,y,np.linspace(0,z,2), 'k--')
+        ax.plot3D(x,np.linspace(0,y,2),z, 'k--')
+
+    ax.set_xlim([min_dim, max_dim])
+    ax.set_ylim([min_dim, max_dim])
+    ax.set_zlim([min_dim, max_dim])
+
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+
+    plt.show()
+
+    return fig
+
 if __name__ == "__main__":
-    vectorA: Vector = [1,2,3,4]
-    vectorB: Vector = [2,3,4,5]
-    matrixA: Matrix = [vectorA, vectorB]
+    # vectorA: Vector = [1,2,3,4]
+    # vectorB: Vector = [2,3,4,5]
+    # matrixA: Matrix = [vectorA, vectorB]
 
-    tests_vector_operations_from_scratch(vectorA=vectorA, vectorB=vectorB)
-    tests_matrix_operations_from_scratch(matrixA=matrixA)
+    # tests_vector_operations_from_scratch(vectorA=vectorA, vectorB=vectorB)
+    # tests_matrix_operations_from_scratch(matrixA=matrixA)
     
-    vectorA: NPVector = np.asarray(vectorA, dtype="float")
-    vectorB: NPVector = np.asarray(vectorB, dtype="float")
-    matrixA: NPMatrix = np.asarray(matrixA, dtype="float")
+    # vectorA: NPVector = np.asarray(vectorA, dtype="float")
+    # vectorB: NPVector = np.asarray(vectorB, dtype="float")
+    # matrixA: NPMatrix = np.asarray(matrixA, dtype="float")
 
-    tests_vector_operations_from_libs(vectorA=vectorA, vectorB=vectorB)
-    tests_matrix_operations_from_libs(matrixA=matrixA)
+    # tests_vector_operations_from_libs(vectorA=vectorA, vectorB=vectorB)
+    # tests_matrix_operations_from_libs(matrixA=matrixA)
 
+    pca_data = np.asarray([[1,2,3], [2,3,4]])
+    pca = VanillaPCA(pca_method="tradicional")
+    feature_vector, projected_data = pca.compute_pca(data=pca_data, n_principal_components=pca_data.shape[1], project_data=True)
+    print(f"Feature Vector:\n{feature_vector}\nProjected Data:\n{projected_data}")
+
+    vis_data = np.concatenate([pca_data, feature_vector, projected_data], axis=0)
+    plot_vectors(vectors=vis_data)
     
-
     
-
